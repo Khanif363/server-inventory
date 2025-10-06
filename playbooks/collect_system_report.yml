@@ -1,6 +1,6 @@
 ---
 - name: Collect system reports from all servers
-  hosts: servers
+  hosts: all
   become: yes
   roles:
     - system_report
