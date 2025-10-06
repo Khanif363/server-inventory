@@ -19,9 +19,33 @@ OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
     echo "Architecture       : $(uname -m)"
     echo "OS Name & Version  : $(grep PRETTY_NAME /etc/os-release | cut -d= -f2- | tr -d '\"')"
     echo "Kernel Version     : $(uname -r)"
-    echo "Firmware Version   : $(sudo dmidecode -s bios-version 2>/dev/null || echo 'Unknown')"
-    echo "Firmware Release   : $(sudo dmidecode -s bios-release-date 2>/dev/null || echo 'Unknown')"
-    echo "Serial Number      : $(sudo dmidecode -s system-serial-number 2>/dev/null || echo 'Unknown')"
+    echo "Firmware Version   : $(
+        dmidecode -s bios-version 2>/dev/null \
+        || sudo dmidecode -s bios-version 2>/dev/null \
+        || cat /sys/class/dmi/id/bios_version 2>/dev/null \
+        || echo 'Unknown'
+    )"
+
+    echo "Firmware Release   : $(
+        dmidecode -s bios-release-date 2>/dev/null \
+        || sudo dmidecode -s bios-release-date 2>/dev/null \
+        || cat /sys/class/dmi/id/bios_date 2>/dev/null \
+        || echo 'Unknown'
+    )"
+
+    echo "Serial Number      : $(
+        dmidecode -s system-serial-number 2>/dev/null \
+        || sudo dmidecode -s system-serial-number 2>/dev/null \
+        || cat /sys/class/dmi/id/product_serial 2>/dev/null \
+        || echo 'Unknown'
+    )"
+    echo "Machine Model      : $(
+        dmidecode -s system-product-name 2>/dev/null \
+        || sudo dmidecode -s system-product-name 2>/dev/null \
+        || cat /sys/class/dmi/id/product_name 2>/dev/null \
+        || echo 'Unknown'
+    )"
+
     echo
 
     echo "==================== CPU INFORMATION ===================="
@@ -47,10 +71,20 @@ OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
     echo
     echo "RAID Configuration:"
     if command -v mdadm &>/dev/null; then
-        sudo mdadm --detail --scan
-        sudo mdadm --detail /dev/md* 2>/dev/null
+        # Scan RAID arrays (tanpa sudo dulu, fallback pakai sudo)
+        RAID_SCAN=$(mdadm --detail --scan 2>/dev/null || sudo mdadm --detail --scan 2>/dev/null)
+        if [[ -n "$RAID_SCAN" ]]; then
+            echo "$RAID_SCAN"
+            # Detail semua RAID devices
+            for dev in /dev/md*; do
+                [[ -e "$dev" ]] || continue
+                mdadm --detail "$dev" 2>/dev/null || sudo mdadm --detail "$dev" 2>/dev/null
+            done
+        else
+            echo "No RAID configured or insufficient permissions"
+        fi
     else
-        echo "mdadm not installed or no RAID configured"
+        echo "mdadm not installed"
     fi
     echo
 
@@ -179,7 +213,20 @@ OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
 
     echo "==================== SECURITY & VULNERABILITY NOTES ======================"
     echo "Kernel Version : $(uname -r)"
-    echo "-> Check CVEs via: https://cve.mitre.org/ or `sudo apt list --upgradable` for kernel patches"
+    echo "-> Check CVEs via: https://cve.mitre.org/"
+    # Cek paket yang bisa diupgrade (Debian/Ubuntu)
+    if command -v apt &>/dev/null; then
+        echo "-> Kernel / package updates available:"
+        # Coba tanpa sudo dulu, fallback pakai sudo
+        UPGRADABLE=$(apt list --upgradable 2>/dev/null || sudo apt list --upgradable 2>/dev/null)
+        if [[ -n "$UPGRADABLE" ]]; then
+            echo "$UPGRADABLE" | grep -i "linux" || echo "No kernel updates available"
+        else
+            echo "Unable to check updates or no updates available"
+        fi
+    else
+        echo "-> Package manager 'apt' not found; check updates manually"
+    fi
     echo
     echo "OpenSSL Version: $(openssl version 2>/dev/null || echo 'Not Installed')"
     echo "-> Verify with: openssl version -a"
