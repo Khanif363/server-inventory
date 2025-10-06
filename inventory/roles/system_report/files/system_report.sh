@@ -21,6 +21,7 @@ OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
     echo "Kernel Version     : $(uname -r)"
     echo "Firmware Version   : $(sudo dmidecode -s bios-version 2>/dev/null || echo 'Unknown')"
     echo "Firmware Release   : $(sudo dmidecode -s bios-release-date 2>/dev/null || echo 'Unknown')"
+    echo "Serial Number      : $(sudo dmidecode -s system-serial-number 2>/dev/null || echo 'Unknown')"
     echo
 
     echo "==================== CPU INFORMATION ===================="
