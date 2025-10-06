@@ -1,4 +1,10 @@
 ---
+- name: Ensure /tmp/kemhan directory exists on remote
+  file:
+    path: /tmp/kemhan
+    state: directory
+    mode: '0755'
+
 - name: Ensure script exists on remote
   copy:
     src: system_report.sh
