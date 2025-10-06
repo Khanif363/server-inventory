@@ -15,7 +15,7 @@
 - name: Fetch report file to local
   fetch:
     src: "/tmp/{{ item }}"
-    dest: "./output/{{ inventory_hostname }}/"
+    dest: "../../output/{{ inventory_hostname }}/"
     flat: yes
   with_items:
     - "{{ report_result.stdout_lines | select('match', '.*system_report_.*\\.txt') | list }}"
