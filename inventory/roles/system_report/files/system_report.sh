@@ -196,4 +196,5 @@ OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
 
 } > "$OUTPUT"
 
-echo "✅ Full system report saved to: $OUTPUT"
+echo $OUTPUT
+# echo "✅ Full system report saved to: $OUTPUT"
