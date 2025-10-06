@@ -1,0 +1,22 @@
+---
+- name: Ensure script exists on remote
+  copy:
+    src: system_report.sh
+    dest: /tmp/system_report.sh
+    mode: '0755'
+
+- name: Execute system report script
+  shell: /tmp/system_report.sh
+  args:
+    chdir: /tmp
+  register: report_result
+  ignore_errors: yes
+
+- name: Fetch report file to local
+  fetch:
+    src: "/tmp/{{ item }}"
+    dest: "../../output/{{ inventory_hostname }}/"
+    flat: yes
+  with_items:
+    - "{{ report_result.stdout_lines | select('match', '.*system_report_.*\\.txt') | list }}"
+  when: report_result is defined

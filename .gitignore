@@ -1,0 +1,34 @@
+# ==========================
+# Ansible Best Practice .gitignore
+# ==========================
+
+# 1️⃣ Output hasil eksekusi
+output/
+*.log
+*.retry
+
+# 2️⃣ File sensitif dan credentials
+*.vault_pass
+*.pem
+*.key
+*.crt
+*.pub
+*.secret
+*.enc
+*.bak
+
+# 3️⃣ File inventory pribadi (berisi IP dan user)
+inventory/hosts.ini
+
+# 4️⃣ Temporary files Ansible
+*.tmp
+*.swp
+*.swo
+*.pyc
+__pycache__/
+
+# 5️⃣ Local system or editor files
+.DS_Store
+.idea/
+.vscode/
+*.orig
