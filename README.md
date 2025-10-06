@@ -2,8 +2,10 @@
 
 ## Preparation
 ### Install Ansible
-`apt install pipx`
-`pipx install --include-deps ansible`
+```
+apt install pipx
+pipx install --include-deps ansible
+```
 ### Configuration
 Parameters need to adjust:
 - username
