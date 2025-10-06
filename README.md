@@ -12,6 +12,12 @@ Parameters need to adjust:
 - ip_server
 - port
 - inventory/hosts.ini (example from hosts.example.ini)
+#### sample
+```
+#hosts.ini
+hostname_server_vm ansible_host=ip_address ansible_user=username ansible_port=ssh_port
+```
+
 
 ## Server Target(RUN COMMAND)
 ### Permit Access sudo without password
