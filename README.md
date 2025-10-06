@@ -26,7 +26,7 @@ hostname_server_vm ansible_host=ip_address ansible_user=username ansible_port=ss
 
 ## How Operate?
 ### Method 1 (With Credential)
-#### Server Local
+#### Local Server
 ##### Create Encrypted Variables (for each host/server/vm)
 ```
 ansible-vault create inventory/host_vars/server1.yml
@@ -45,14 +45,14 @@ ansible-playbook playbooks/collect_system_report.yml --ask-vault-pass
 
 
 ### Method 2 (With SSH Key)
-#### Server Target
+#### Target Server
 ##### Permit Access sudo without password
 ```
 echo "username ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/username
 chmod 440 /etc/sudoers.d/username
 ```
 
-#### Server Local
+#### Local Server
 ##### Allow Remote Connection
 ```
 ssh-copy-id -p 22 username@ip_server
