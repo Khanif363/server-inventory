@@ -1,106 +1,116 @@
 ---
-- name: Generate System Reports for Servers and VMs
-  hosts: all
-  gather_facts: yes
-  vars:
-    output_base_dir: "{{ playbook_dir }}/../output"
-  
-  tasks:
-    - name: Try to get system serial number with sudo
-      shell: |
-        if command -v dmidecode &> /dev/null; then
-          SERIAL=$(dmidecode -s system-serial-number 2>/dev/null | grep -v '^#' | head -1)
-          if [ ! -z "$SERIAL" ] && [ "$SERIAL" != "Not Specified" ]; then
-            echo "$SERIAL"
-          else
-            echo ""
-          fi
-        else
-          echo ""
-        fi
-      register: system_identifier_sudo
-      changed_when: false
-      become: yes
-      ignore_errors: yes
+# roles/system_report/tasks/main.yml
+- name: Try to get system serial number with sudo
+  shell: |
+    if command -v dmidecode &> /dev/null; then
+      SERIAL=$(dmidecode -s system-serial-number 2>/dev/null | grep -v '^#' | head -1)
+      if [ ! -z "$SERIAL" ] && [ "$SERIAL" != "Not Specified" ]; then
+        echo "$SERIAL"
+      else
+        echo ""
+      fi
+    else
+      echo ""
+    fi
+  register: system_identifier_sudo
+  changed_when: false
+  become: yes
+  ignore_errors: yes
 
-    - name: Try to get system serial number without sudo (fallback)
-      shell: |
-        if command -v dmidecode &> /dev/null; then
-          SERIAL=$(dmidecode -s system-serial-number 2>/dev/null | grep -v '^#' | head -1)
-          if [ ! -z "$SERIAL" ] && [ "$SERIAL" != "Not Specified" ]; then
-            echo "$SERIAL"
-          else
-            echo ""
-          fi
-        else
-          # Try alternative methods without sudo
-          if [ -r /sys/class/dmi/id/product_serial ]; then
-            cat /sys/class/dmi/id/product_serial 2>/dev/null
-          elif [ -r /sys/class/dmi/id/board_serial ]; then
-            cat /sys/class/dmi/id/board_serial 2>/dev/null
-          else
-            echo ""
-          fi
-        fi
-      register: system_identifier_nosudo
-      changed_when: false
-      become: no
-      ignore_errors: yes
-      when: system_identifier_sudo.stdout is not defined or system_identifier_sudo.stdout == ""
+- name: Try to get system serial number without sudo (fallback)
+  shell: |
+    if command -v dmidecode &> /dev/null; then
+      SERIAL=$(dmidecode -s system-serial-number 2>/dev/null | grep -v '^#' | head -1)
+      if [ ! -z "$SERIAL" ] && [ "$SERIAL" != "Not Specified" ]; then
+        echo "$SERIAL"
+      else
+        echo ""
+      fi
+    else
+      # Try alternative methods without sudo
+      if [ -r /sys/class/dmi/id/product_serial ]; then
+        cat /sys/class/dmi/id/product_serial 2>/dev/null
+      elif [ -r /sys/class/dmi/id/board_serial ]; then
+        cat /sys/class/dmi/id/board_serial 2>/dev/null
+      else
+        echo ""
+      fi
+    fi
+  register: system_identifier_nosudo
+  changed_when: false
+  become: no
+  ignore_errors: yes
+  when: system_identifier_sudo.stdout is not defined or system_identifier_sudo.stdout == ""
 
-    - name: Set identifier variable
-      set_fact:
-        host_identifier: "{{ system_identifier.stdout | default(ansible_host) | regex_replace('[^a-zA-Z0-9._-]', '_') }}"
+- name: Set identifier variable
+  set_fact:
+    host_identifier: >-
+      {%- if system_identifier_sudo.stdout is defined and system_identifier_sudo.stdout != "" -%}
+        {{ system_identifier_sudo.stdout | regex_replace('[^a-zA-Z0-9._-]', '_') }}
+      {%- elif system_identifier_nosudo.stdout is defined and system_identifier_nosudo.stdout != "" -%}
+        {{ system_identifier_nosudo.stdout | regex_replace('[^a-zA-Z0-9._-]', '_') }}
+      {%- else -%}
+        {{ ansible_host | regex_replace('[^a-zA-Z0-9._-]', '_') }}
+      {%- endif -%}
+    serial_method: >-
+      {%- if system_identifier_sudo.stdout is defined and system_identifier_sudo.stdout != "" -%}
+        sudo
+      {%- elif system_identifier_nosudo.stdout is defined and system_identifier_nosudo.stdout != "" -%}
+        non-sudo
+      {%- else -%}
+        fallback-ip
+      {%- endif -%}
 
-    - name: Ensure script exists on remote
-      copy:
-        src: system_report.sh
-        dest: /tmp/system_report.sh
-        mode: '0755'
+- name: Ensure script exists on remote
+  copy:
+    src: system_report.sh
+    dest: /tmp/system_report.sh
+    mode: '0755'
 
-    - name: Execute system report script
-      shell: /tmp/system_report.sh
-      args:
-        chdir: /tmp
-      register: report_result
-      ignore_errors: yes
+- name: Execute system report script
+  shell: /tmp/system_report.sh
+  args:
+    chdir: /tmp
+  register: report_result
+  ignore_errors: yes
 
-    - name: Create output directory for this host
-      local_action:
-        module: file
-        path: "{{ output_base_dir }}/{{ host_identifier }}"
-        state: directory
-        mode: '0755'
-      run_once: no
+- name: Create output directory for this host
+  local_action:
+    module: file
+    path: "{{ playbook_dir }}/../output/{{ host_identifier }}"
+    state: directory
+    mode: '0755'
+  run_once: no
 
-    - name: Fetch report file to local with identifier-based path
-      fetch:
-        src: "/tmp/{{ item }}"
-        dest: "{{ output_base_dir }}/{{ host_identifier }}/"
-        flat: yes
-      with_items: "{{ report_result.stdout_lines | select('match', '.*system_report_.*\\.txt') | list }}"
-      when: 
-        - report_result is defined
-        - report_result.stdout_lines is defined
+- name: Fetch report file to local with identifier-based path
+  fetch:
+    src: "/tmp/{{ item }}"
+    dest: "{{ playbook_dir }}/../output/{{ host_identifier }}/"
+    flat: yes
+  with_items: "{{ report_result.stdout_lines | select('match', '.*system_report_.*\\.txt') | list }}"
+  when: 
+    - report_result is defined
+    - report_result.stdout_lines is defined
 
-    - name: Create metadata file
-      local_action:
-        module: copy
-        content: |
-          Host: {{ inventory_hostname }}
-          IP Address: {{ ansible_host }}
-          Identifier: {{ host_identifier }}
-          Type: {{ 'VM' if ansible_virtualization_role is defined and ansible_virtualization_role == 'guest' else 'Physical Server' }}
-          Date: {{ ansible_date_time.iso8601 }}
-        dest: "{{ output_base_dir }}/{{ host_identifier }}/metadata.txt"
-      when: report_result is success
+- name: Create metadata file
+  local_action:
+    module: copy
+    content: |
+      Host: {{ inventory_hostname }}
+      IP Address: {{ ansible_host }}
+      Identifier: {{ host_identifier }}
+      Serial Method: {{ serial_method }}
+      Type: {{ 'VM' if ansible_virtualization_role is defined and ansible_virtualization_role == 'guest' else 'Physical Server' }}
+      Date: {{ ansible_date_time.iso8601 }}
+    dest: "{{ playbook_dir }}/../output/{{ host_identifier }}/metadata.txt"
+  when: report_result is success
 
-    - name: Cleanup temporary files on remote
-      file:
-        path: "/tmp/{{ item }}"
-        state: absent
-      with_items:
-        - system_report.sh
-        - "{{ report_result.stdout_lines | select('match', '.*system_report_.*\\.txt') | list }}"
-      when: report_result is defined
-      ignore_errors: yes
+- name: Cleanup temporary files on remote
+  file:
+    path: "/tmp/{{ item }}"
+    state: absent
+  with_items:
+    - system_report.sh
+    - "{{ report_result.stdout_lines | select('match', '.*system_report_.*\\.txt') | list }}"
+  when: report_result is defined
+  ignore_errors: yes
