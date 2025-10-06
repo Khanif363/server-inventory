@@ -50,22 +50,7 @@
 
     - name: Set identifier variable
       set_fact:
-        host_identifier: >-
-          {%- if system_identifier_sudo.stdout is defined and system_identifier_sudo.stdout != "" -%}
-            {{ system_identifier_sudo.stdout | regex_replace('[^a-zA-Z0-9._-]', '_') }}
-          {%- elif system_identifier_nosudo.stdout is defined and system_identifier_nosudo.stdout != "" -%}
-            {{ system_identifier_nosudo.stdout | regex_replace('[^a-zA-Z0-9._-]', '_') }}
-          {%- else -%}
-            {{ ansible_host | regex_replace('[^a-zA-Z0-9._-]', '_') }}
-          {%- endif -%}
-        serial_method: >-
-          {%- if system_identifier_sudo.stdout is defined and system_identifier_sudo.stdout != "" -%}
-            sudo
-          {%- elif system_identifier_nosudo.stdout is defined and system_identifier_nosudo.stdout != "" -%}
-            non-sudo
-          {%- else -%}
-            fallback-ip
-          {%- endif -%}
+        host_identifier: "{{ system_identifier.stdout | default(ansible_host) | regex_replace('[^a-zA-Z0-9._-]', '_') }}"
 
     - name: Ensure script exists on remote
       copy:
@@ -105,7 +90,6 @@
           Host: {{ inventory_hostname }}
           IP Address: {{ ansible_host }}
           Identifier: {{ host_identifier }}
-          Serial Method: {{ serial_method }}
           Type: {{ 'VM' if ansible_virtualization_role is defined and ansible_virtualization_role == 'guest' else 'Physical Server' }}
           Date: {{ ansible_date_time.iso8601 }}
         dest: "{{ output_base_dir }}/{{ host_identifier }}/metadata.txt"
