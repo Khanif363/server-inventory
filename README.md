@@ -9,7 +9,7 @@ Parameters need to adjust:
 - username
 - ip_server
 - port
-- inventory/hosts.ini
+- inventory/hosts.ini (example from hosts.example.ini)
 
 ## Server Target(RUN COMMAND)
 ### Permit Access sudo without password
