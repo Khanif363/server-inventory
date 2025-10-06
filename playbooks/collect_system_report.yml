@@ -2,5 +2,6 @@
 - name: Collect system reports from all servers
   hosts: all
   become: yes
+  gather_facts: yes
   roles:
     - system_report
