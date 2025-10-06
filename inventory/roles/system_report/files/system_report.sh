@@ -10,7 +10,36 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
+# OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
+
+# Default IP jika tidak diberikan
+IP_ADDRESS="unknown"
+
+# Parsing parameter
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -ip)
+            IP_ADDRESS="$2"
+            shift 2
+            ;;
+        *)
+            echo "Usage: $0 -ip <ip_address>"
+            exit 1
+            ;;
+    esac
+done
+
+# Ambil serial number
+SERIAL_NUMBER=$(
+        dmidecode -s system-serial-number 2>/dev/null \
+        || sudo dmidecode -s system-serial-number 2>/dev/null \
+        || cat /sys/class/dmi/id/product_serial 2>/dev/null \
+        || echo 'unknown'
+    )
+
+# Nama file output
+OUTPUT="sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
+
 
 {
     echo "==================== SYSTEM SUMMARY ===================="
