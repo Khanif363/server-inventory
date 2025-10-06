@@ -4,6 +4,7 @@
 ### Clone Repository
 ```
 git clone https://github.com/Khanif363/server-inventory.git
+cd server-inventory
 ```
 ### Install Ansible (Local)
 ```
