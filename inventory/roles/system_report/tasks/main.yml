@@ -6,7 +6,7 @@
     mode: '0755'
 
 - name: Execute system report script
-  shell: /tmp/system_report.sh
+  shell: sudo /tmp/system_report.sh
   args:
     chdir: /tmp
   register: report_result
