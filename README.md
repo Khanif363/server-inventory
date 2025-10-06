@@ -19,7 +19,7 @@ chmod 440 /etc/sudoers.d/username
 ## Server Local
 ### Allow Remote Connection
 ssh-copy-id -p 22 username@ip_server
-### Install ansible community package
+### Install ansible community package (jika diperlukan)
 ansible-galaxy collection install community.general
 ### Run Script
 ansible-playbook playbooks/collect_system_report.yml
