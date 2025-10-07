@@ -24,7 +24,7 @@
     dest: "{{ playbook_dir }}/../output/{{ group_names[0] }}/{{ inventory_hostname }}/"
     flat: yes
   with_items:
-    - "{{ report_result.stdout_lines | select('match', 'sn\\..*_ip\\..*_.*_.*\\.txt') | list }}"
+    - "{{ (report_result.stdout_lines | select('match', '(?:.*_)?sn\\..*_ip\\..*(?:_ad\\..*)?_.*_.*\\.txt') | list | first) }}"
   when: report_result is defined
 
 - name: Cleanup temporary files on remote
@@ -33,6 +33,6 @@
     state: absent
   with_items:
     - system_report.sh
-    - "{{ report_result.stdout_lines | select('match', 'sn\\..*_ip\\..*_.*_.*\\.txt') | list }}"
+    - "{{ (report_result.stdout_lines | select('match', '(?:.*_)?sn\\..*_ip\\..*(?:_ad\\..*)?_.*_.*\\.txt') | list | first) }}"
   when: report_result is defined
   ignore_errors: yes
