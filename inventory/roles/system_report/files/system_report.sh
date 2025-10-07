@@ -12,8 +12,9 @@ fi
 
 # OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
 
-# Default IP jika tidak diberikan
+# Default values
 IP_ADDRESS="unknown"
+ADDITIONAL_INFO="none"
 
 # Parsing parameter
 while [[ $# -gt 0 ]]; do
@@ -22,8 +23,12 @@ while [[ $# -gt 0 ]]; do
             IP_ADDRESS="$2"
             shift 2
             ;;
+        -ad)
+            ADDITIONAL_INFO="$2"
+            shift 2
+            ;;
         *)
-            echo "Usage: $0 -ip <ip_address>"
+            echo "Usage: $0 -ip <ip_address> [-ad <additional_info>]"
             exit 1
             ;;
     esac
@@ -38,7 +43,12 @@ SERIAL_NUMBER=$(
     )
 
 # Nama file output
-OUTPUT="sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
+if [[ -n "$ADDITIONAL_INFO" ]]; then
+    OUTPUT="${ADDITIONAL_INFO}_sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
+else
+    OUTPUT="sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
+fi
+# OUTPUT="${ADDITIONAL_INFO}_sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
 
 
 {
