@@ -21,7 +21,7 @@ Parameters need to adjust:
 #### sample
 ```
 #hosts.ini
-hostname_server_vm ansible_host=ip_address ansible_user=username ansible_port=ssh_port
+gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type ansible_host=ip_address ansible_user=username ansible_port=ssh_port
 ```
 
 ## How Operate?
