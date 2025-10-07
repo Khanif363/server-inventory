@@ -12,7 +12,7 @@
     mode: '0755'
 
 - name: Execute system report script
-  shell: /tmp/kemhan/system_report.sh -ip {{ ansible_host }}
+  shell: /tmp/kemhan/system_report.sh -ip {{ ansible_host }} -ad {{ inventory_hostname }}
   args:
     chdir: /tmp/kemhan
   register: report_result
