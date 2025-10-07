@@ -34,6 +34,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# ✅ Validasi: Pastikan -ad wajib diisi
+if [[ -z "$ADDITIONAL_INFO" ]]; then
+    echo "Error: missing required parameter -ad <additional_info>"
+    echo "Usage: $0 -ip <ip_address> -ad <additional_info>"
+    exit 1
+fi
+
 # Ambil serial number
 SERIAL_NUMBER=$(
         dmidecode -s system-serial-number 2>/dev/null \
