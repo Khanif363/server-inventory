@@ -29,9 +29,9 @@ gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type ansible_host=ip_addres
 #### Local Server
 ##### Create Encrypted Variables (for each host/server/vm)
 ```
-ansible-vault create inventory/host_vars/server1.yml
+ansible-vault create inventory/host_vars/gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type.yml
 ```
-[server1].yml server1 is hostname of your server in inventory/hosts.ini
+[gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type].yml gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type is inventory_hostname of your server in inventory/hosts.ini
 then and add this variables
 ```
 ansible_password: your_server_password
