@@ -97,8 +97,7 @@ fi
     echo "==================== CPU INFORMATION ===================="
     lscpu | egrep "Model name|Socket|Thread|Core|CPU\(s\)"
     echo
-    echo "Total CPU Usage:"
-    mpstat 1 1 | awk '/Average/ && $12 ~ /[0-9.]+/ {printf "Used: %.1f%%\n", 100 - $12}'
+    (grep '^cpu ' /proc/stat; sleep 1; grep '^cpu ' /proc/stat) | awk 'NR==1{prev_total=$2+$3+$4+$5+$6+$7+$8; prev_idle=$5} NR==2{curr_total=$2+$3+$4+$5+$6+$7+$8; curr_idle=$5; total_diff=curr_total-prev_total; idle_diff=curr_idle-prev_idle; if(total_diff==0){printf "CPU Usage: 0.0%%\n"} else {printf "CPU Usage: %.1f%%\n", 100*(total_diff-idle_diff)/total_diff}}'
     echo
 
     echo "==================== MEMORY INFORMATION ===================="
@@ -110,7 +109,7 @@ fi
 
     echo "==================== DISK INFORMATION ======================"
     echo "Disk Model and Capacity:"
-    lsblk -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT | grep -E "disk|part"
+    lsblk -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT
     echo
     echo "Partition Usage:"
     df -h --total
@@ -141,8 +140,8 @@ fi
     echo "Interface Details:"
     ip link show | grep -E "^[0-9]+:|link/ether"
     echo
-    echo "Gateway(s):"
-    ip route | grep default
+    echo "Routing(s):"
+    ip route
     echo
     
     echo "DNS Servers (from /etc/resolv.conf):"
@@ -286,6 +285,10 @@ fi
     else
         echo "No firewall tool (ufw/firewalld) found."
     fi
+    echo
+
+    echo "All Information"
+    lshw
     echo
 
 } > "$OUTPUT"
