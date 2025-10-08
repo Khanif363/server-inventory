@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  ansible-control-old:
+    build:
+      context: .
+      args:
+        ANSIBLE_VERSION: 2.9.27
+    image: ansible-control:2.9.27
+    container_name: ansible-control-old
+    volumes:
+      # Mount seluruh project directory
+      - .:/workspace
+      # Mount SSH keys (read-only untuk keamanan)
+      - ~/.ssh:/root/.ssh:ro
+      # Persist output directory
+      - ./output:/workspace/output
+    working_dir: /workspace
+    environment:
+      - ANSIBLE_CONFIG=/workspace/ansible.cfg
+    stdin_open: true
+    tty: true
+    network_mode: host
+    command: /bin/bash
+
+  ansible-control-new:
+    build:
+      context: .
+      args:
+        ANSIBLE_VERSION: 12.1.0
+    image: ansible-control:12.1.0
+    container_name: ansible-control-new
+    volumes:
+      # Mount seluruh project directory
+      - .:/workspace
+      # Mount SSH keys (read-only untuk keamanan)
+      - ~/.ssh:/root/.ssh:ro
+      # Persist output directory
+      - ./output:/workspace/output
+    working_dir: /workspace
+    environment:
+      - ANSIBLE_CONFIG=/workspace/ansible.cfg
+    stdin_open: true
+    tty: true
+    network_mode: host
+    command: /bin/bash

@@ -233,8 +233,113 @@ fi
     last -n 5
     echo
 
-    echo "==================== CRON JOBS (root) ======================"
-    crontab -l -u root 2>/dev/null || echo "No cron jobs for root"
+    echo "==================== CRON JOBS ======================"
+    # 1. User Crontabs
+    echo "========================================="
+    echo "1. USER CRONTABS"
+    echo "========================================="
+    for user in $(cut -f1 -d: /etc/passwd); do
+        cron_content=$(crontab -l -u "$user" 2>/dev/null)
+        if [ -n "$cron_content" ]; then
+            echo ""
+            echo "--- User: $user ---"
+            echo "$cron_content"
+        fi
+    done
+
+    # 2. System-wide crontab
+    echo ""
+    echo "========================================="
+    echo "2. SYSTEM CRONTAB (/etc/crontab)"
+    echo "========================================="
+    if [ -f /etc/crontab ]; then
+        cat /etc/crontab
+    else
+        echo "File tidak ditemukan"
+    fi
+
+    # 3. Cron.d directory
+    echo ""
+    echo "========================================="
+    echo "3. CRON.D DIRECTORY (/etc/cron.d/)"
+    echo "========================================="
+    if [ -d /etc/cron.d ]; then
+        for file in /etc/cron.d/*; do
+            if [ -f "$file" ]; then
+                echo ""
+                echo "--- File: $file ---"
+                cat "$file"
+            fi
+        done
+    else
+        echo "Directory tidak ditemukan"
+    fi
+
+    # 4. Cron hourly
+    echo ""
+    echo "========================================="
+    echo "4. CRON HOURLY (/etc/cron.hourly/)"
+    echo "========================================="
+    if [ -d /etc/cron.hourly ]; then
+        ls -lh /etc/cron.hourly/
+    else
+        echo "Directory tidak ditemukan"
+    fi
+
+    # 5. Cron daily
+    echo ""
+    echo "========================================="
+    echo "5. CRON DAILY (/etc/cron.daily/)"
+    echo "========================================="
+    if [ -d /etc/cron.daily ]; then
+        ls -lh /etc/cron.daily/
+    else
+        echo "Directory tidak ditemukan"
+    fi
+
+    # 6. Cron weekly
+    echo ""
+    echo "========================================="
+    echo "6. CRON WEEKLY (/etc/cron.weekly/)"
+    echo "========================================="
+    if [ -d /etc/cron.weekly ]; then
+        ls -lh /etc/cron.weekly/
+    else
+        echo "Directory tidak ditemukan"
+    fi
+
+    # 7. Cron monthly
+    echo ""
+    echo "========================================="
+    echo "7. CRON MONTHLY (/etc/cron.monthly/)"
+    echo "========================================="
+    if [ -d /etc/cron.monthly ]; then
+        ls -lh /etc/cron.monthly/
+    else
+        echo "Directory tidak ditemukan"
+    fi
+
+    # 8. Anacron (jika ada)
+    echo ""
+    echo "========================================="
+    echo "8. ANACRON (/etc/anacrontab)"
+    echo "========================================="
+    if [ -f /etc/anacrontab ]; then
+        cat /etc/anacrontab
+    else
+        echo "File tidak ditemukan"
+    fi
+
+    # 9. Systemd timers (alternatif modern dari cron)
+    echo ""
+    echo "========================================="
+    echo "9. SYSTEMD TIMERS (Active)"
+    echo "========================================="
+    if command -v systemctl &> /dev/null; then
+        systemctl list-timers --all
+    else
+        echo "systemctl tidak tersedia"
+    fi
     echo
 
     echo "==================== DOCKER INFORMATION ======================"
