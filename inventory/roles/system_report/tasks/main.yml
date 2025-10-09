@@ -21,7 +21,7 @@
 - name: Fetch report file to local
   fetch:
     src: "/tmp/kemhan/{{ item }}"
-    dest: "{{ playbook_dir }}/../output/{{ group_names[0] }}/{{ inventory_hostname }}/"
+    dest: "{{ playbook_dir }}/../output/{{ server_type }}/{{ inventory_hostname }}/"
     flat: yes
   with_items:
     - "{{ (report_result.stdout_lines | select('match', '(?:.*_)?sn\\..*_ip\\..*(?:_ad\\..*)?_.*_.*\\.txt') | list | first) }}"
