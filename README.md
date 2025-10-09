@@ -26,7 +26,7 @@ gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type ansible_host=ip_addres
 
 ## How Operate?
 ### Method 1 (With Credential)
-#### Local Server
+#### Local Server (Non-Docker)
 ##### Create Encrypted Variables (for each host/server/vm)
 ```
 ansible-vault create inventory/host_vars/gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type.yml
@@ -41,6 +41,30 @@ ansible_become_pass: your_server_password
 ##### Run Script
 ```
 ansible-playbook playbooks/collect_system_report.yml --ask-vault-pass
+```
+
+#### Local Server (With-Docker)
+##### Install Docker Engine
+Doc: https://docs.docker.com/engine/install/
+##### Build & Deploy Container
+```
+docker compose build
+docker compose up -d
+```
+##### Create Encrypted Variables (for each host/server/vm)
+```
+docker exec ansible-control-old ansible-vault create inventory/host_vars/gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type.yml
+```
+[gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type].yml gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type is inventory_hostname of your server in inventory/hosts.ini
+then and add this variables
+```
+ansible_password: your_server_password
+ansible_become_pass: your_server_password
+```
+
+##### Run Script
+```
+docker exec ansible-control-old ansible-playbook playbooks/collect_system_report.yml --ask-vault-pass
 ```
 
 
