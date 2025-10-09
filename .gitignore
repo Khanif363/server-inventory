@@ -20,6 +20,8 @@ output/
 # 3️⃣ File inventory pribadi (berisi IP dan user)
 inventory/hosts.ini
 inventory/host_vars/*
+inventory/group_vars/*
+!inventory/group_vars/all.yml
 # 4️⃣ Temporary files Ansible
 *.tmp
 *.swp

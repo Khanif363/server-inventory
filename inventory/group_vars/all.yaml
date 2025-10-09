@@ -1,3 +1,5 @@
 ansible_become: yes
 ansible_become_method: sudo
 log_dir: /var/log/system_reports/
+ansible_password: "{{ server_password }}"
+ansible_become_pass: "{{ server_password }}"
