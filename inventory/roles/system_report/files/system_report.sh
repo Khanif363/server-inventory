@@ -63,7 +63,7 @@ fi
     echo "Hostname           : $(hostname)"
     echo "Date/Time          : $(date)"
     echo "Architecture       : $(uname -m)"
-    echo "OS Name & Version  : $(grep PRETTY_NAME /etc/os-release | cut -d= -f2- | tr -d '\"')"
+    echo "OS Name & Version  : $(cat /etc/*release | head -n 1)"
     echo "Kernel Version     : $(uname -r)"
     echo "Firmware Version   : $(
         dmidecode -s bios-version 2>/dev/null \
