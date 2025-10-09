@@ -53,7 +53,7 @@ docker compose up -d
 ```
 ##### Create Encrypted Variables (for each host/server/vm)
 ```
-docker exec ansible-control-old ansible-vault create inventory/host_vars/gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type.yml
+docker compose exec ansible-control-old ansible-vault create inventory/host_vars/gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type.yml
 ```
 [gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type].yml gd.nama-gedung_r.rack-number_u.unit-number_ty.server-type is inventory_hostname of your server in inventory/hosts.ini
 then and add this variables
@@ -64,7 +64,7 @@ ansible_become_pass: your_server_password
 
 ##### Run Script
 ```
-docker exec ansible-control-old ansible-playbook playbooks/collect_system_report.yml --ask-vault-pass
+docker compose exec ansible-control-old ansible-playbook playbooks/collect_system_report.yml --ask-vault-pass
 ```
 
 
