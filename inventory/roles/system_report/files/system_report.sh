@@ -51,9 +51,9 @@ SERIAL_NUMBER=$(
 
 # Nama file output
 if [[ -n "$ADDITIONAL_INFO" ]]; then
-    OUTPUT="${ADDITIONAL_INFO}_sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
+    OUTPUT="${ADDITIONAL_INFO}_sn.${SERIAL_NUMBER}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
 else
-    OUTPUT="sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
+    OUTPUT="sn.${SERIAL_NUMBER}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
 fi
 # OUTPUT="${ADDITIONAL_INFO}_sn.${SERIAL_NUMBER}_ip.${IP_ADDRESS}_hn.$(hostname)_dt.$(date +%Y%m%d_%H%M%S).txt"
 
