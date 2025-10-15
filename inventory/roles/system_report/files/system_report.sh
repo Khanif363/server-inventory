@@ -93,15 +93,51 @@ fi
     echo
 
     echo "==================== CPU INFORMATION ===================="
-    lscpu | egrep "Socket|Thread|Core|CPU\(s\)"
-    MODEL_NAME=$(lscpu 2>/dev/null | grep "Model name" | awk -F: '{print $2}' | sed 's/^[ \t]*//')
-    if [ -z "$MODEL_NAME" ]; then
-        MODEL_NAME=$(grep "model name" /proc/cpuinfo | head -n 1 | awk -F: '{print $2}' | sed 's/^[ \t]*//')
+
+    # Socket, Thread, Core, CPU count
+    if command -v lscpu >/dev/null 2>&1; then
+        lscpu | egrep "Socket|Thread|Core|CPU\(s\)"
+    else
+        # macOS fallback (simplified CPU info)
+        sysctl -a 2>/dev/null | grep -E "hw.ncpu|machdep.cpu.core_count|machdep.cpu.thread_count" | awk -F': ' '{print $1": "$2}'
     fi
-    echo "Model Name: $MODEL_NAME"
-    # echo
-    (grep '^cpu ' /proc/stat; sleep 1; grep '^cpu ' /proc/stat) | awk 'NR==1{prev_total=$2+$3+$4+$5+$6+$7+$8; prev_idle=$5} NR==2{curr_total=$2+$3+$4+$5+$6+$7+$8; curr_idle=$5; total_diff=curr_total-prev_total; idle_diff=curr_idle-prev_idle; if(total_diff==0){printf "CPU Usage: 0.0%%\n"} else {printf "CPU Usage: %.1f%%\n", 100*(total_diff-idle_diff)/total_diff}}'
+
+    # Model name
+    MODEL_NAME=""
+    if command -v lscpu >/dev/null 2>&1; then
+        MODEL_NAME=$(lscpu 2>/dev/null | grep "Model name" | awk -F: '{print $2}' | sed 's/^[ \t]*//')
+    fi
+
+    if [ -z "$MODEL_NAME" ] && [ -r /proc/cpuinfo ]; then
+        MODEL_NAME=$(grep "model name" /proc/cpuinfo 2>/dev/null | head -n 1 | awk -F: '{print $2}' | sed 's/^[ \t]*//')
+    fi
+
+    if [ -z "$MODEL_NAME" ]; then
+        MODEL_NAME=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)
+    fi
+
+    echo "Model Name: ${MODEL_NAME:-Unknown}"
     echo
+
+    # CPU usage (fallback between /proc/stat and top)
+    if [ -r /proc/stat ]; then
+        (grep '^cpu ' /proc/stat; sleep 1; grep '^cpu ' /proc/stat) | awk '
+            NR==1{prev_total=$2+$3+$4+$5+$6+$7+$8; prev_idle=$5}
+            NR==2{
+                curr_total=$2+$3+$4+$5+$6+$7+$8;
+                curr_idle=$5;
+                total_diff=curr_total-prev_total;
+                idle_diff=curr_idle-prev_idle;
+                if(total_diff==0){printf "CPU Usage: 0.0%%\n"} 
+                else {printf "CPU Usage: %.1f%%\n", 100*(total_diff-idle_diff)/total_diff}
+            }'
+    else
+        CPU_USAGE=$(top -l 2 | grep -E "^CPU" | tail -1 | awk '{print $3+$5}')
+        echo "CPU Usage: ${CPU_USAGE:-0}%"
+    fi
+
+    echo
+
 
     echo "==================== MEMORY INFORMATION ===================="
     free -h
@@ -138,13 +174,27 @@ fi
 
     echo "==================== NETWORK CONFIGURATION ================="
     echo "Interfaces and IPs:"
-    ip -o -4 addr show | awk '{print $2": "$4}'
+    if command -v ip >/dev/null 2>&1; then
+        ip -o -4 addr show | awk '{print $2": "$4}'
+    else
+        ifconfig | awk '/^[a-z]/ {iface=$1} /inet / {print iface": "$2}'
+    fi
     echo
+
     echo "Interface Details:"
-    ip link show | grep -E "^[0-9]+:|link/ether"
+    if command -v ip >/dev/null 2>&1; then
+        ip link show | grep -E "^[0-9]+:|link/ether"
+    else
+        ifconfig | grep -E "^[a-z]|ether"
+    fi
     echo
+
     echo "Routing(s):"
-    ip route
+    if command -v ip >/dev/null 2>&1; then
+        ip route
+    else
+        netstat -nr
+    fi
     echo
     
     echo "DNS Servers (from /etc/resolv.conf):"
@@ -275,7 +325,13 @@ fi
     echo
 
     echo "==================== ACTIVE PROCESSES (TOP 10) ======================"
-    ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -n 15
+    if ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem >/dev/null 2>&1; then
+        # Linux style
+        ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -n 15
+    else
+        # macOS fallback (tidak mendukung --sort)
+        ps -Ao pid,ppid,command,%mem,%cpu | head -n 15
+    fi
     echo
 
     echo "==================== SYSTEM LOAD & UPTIME ======================"
