@@ -10,25 +10,23 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# OUTPUT="system_report_$(hostname)_$(date +%Y%m%d_%H%M%S).txt"
-
-# Default values
-IP_ADDRESS="unknown"
-ADDITIONAL_INFO="none"
+# Default value
+ADDITIONAL_INFO=""
 
 # Parsing parameter
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -ip)
-            IP_ADDRESS="$2"
-            shift 2
-            ;;
         -ad)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: -ad requires a value"
+                echo "Usage: $0 -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
+                exit 1
+            fi
             ADDITIONAL_INFO="$2"
             shift 2
             ;;
         *)
-            echo "Usage: $0 -ip <ip_address> [-ad <additional_info>]"
+            echo "Usage: $0 -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
             exit 1
             ;;
     esac
@@ -36,8 +34,8 @@ done
 
 # ✅ Validasi: Pastikan -ad wajib diisi
 if [[ -z "$ADDITIONAL_INFO" ]]; then
-    echo "Error: missing required parameter -ad <additional_info>"
-    echo "Usage: $0 -ip <ip_address> -ad <additional_info>"
+    echo "Error: missing required parameter -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
+    echo "Usage: $0 -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
     exit 1
 fi
 
@@ -63,7 +61,7 @@ fi
     echo "Hostname           : $(hostname)"
     echo "Date/Time          : $(date)"
     echo "Architecture       : $(uname -m)"
-    echo "OS Name & Version  : $(cat /etc/*release | head -n 1)"
+    echo "OS Name & Version  : $(grep -E '^PRETTY_NAME=' /etc/*release 2>/dev/null | head -n 1 | cut -d '=' -f 2 | tr -d '"')"
     echo "Kernel Version     : $(uname -r)"
     echo "Firmware Version   : $(
         dmidecode -s bios-version 2>/dev/null \
@@ -95,8 +93,13 @@ fi
     echo
 
     echo "==================== CPU INFORMATION ===================="
-    lscpu | egrep "Model name|Socket|Thread|Core|CPU\(s\)"
-    echo
+    lscpu | egrep "Socket|Thread|Core|CPU\(s\)"
+    MODEL_NAME=$(lscpu 2>/dev/null | grep "Model name" | awk -F: '{print $2}' | sed 's/^[ \t]*//')
+    if [ -z "$MODEL_NAME" ]; then
+        MODEL_NAME=$(grep "model name" /proc/cpuinfo | head -n 1 | awk -F: '{print $2}' | sed 's/^[ \t]*//')
+    fi
+    echo "Model Name: $MODEL_NAME"
+    # echo
     (grep '^cpu ' /proc/stat; sleep 1; grep '^cpu ' /proc/stat) | awk 'NR==1{prev_total=$2+$3+$4+$5+$6+$7+$8; prev_idle=$5} NR==2{curr_total=$2+$3+$4+$5+$6+$7+$8; curr_idle=$5; total_diff=curr_total-prev_total; idle_diff=curr_idle-prev_idle; if(total_diff==0){printf "CPU Usage: 0.0%%\n"} else {printf "CPU Usage: %.1f%%\n", 100*(total_diff-idle_diff)/total_diff}}'
     echo
 
@@ -184,6 +187,31 @@ fi
     fi
     echo
 
+    count_physical_interfaces() {
+        local count=0
+        
+        for interface in /sys/class/net/*; do
+            # Skip jika bukan directory
+            [ ! -d "$interface" ] && continue
+            
+            interface_name=$(basename "$interface")
+            
+            # Skip loopback
+            if [ "$interface_name" = "lo" ]; then
+                continue
+            fi
+            
+            # Skip virtual interfaces (bridge, bond, VLAN, etc)
+            if [ -d "$interface/device" ] && [ ! -L "$interface/upper_"* ] 2>/dev/null; then
+                ((count++))
+            fi
+        done
+        
+        echo $count
+    }
+
+    # Simpan hasil dalam variable
+    interface_count=$(count_physical_interfaces)
 
     echo "Open Ports:"
     ss -tuln
@@ -191,8 +219,7 @@ fi
     echo "MAC Addresses:"
     ip link | awk '/link\/ether/ {print $2}'
     echo
-    echo "Interface Count:"
-    ip -o link show | wc -l
+    echo "Interface Count: $interface_count"
     echo
 
     echo "==================== INSTALLED MAJOR APPLICATIONS ================="
@@ -208,7 +235,39 @@ fi
     echo
 
     echo "==================== RUNNING SERVICES ======================"
-    systemctl list-units --type=service --state=running --no-pager
+
+    # Deteksi init system dan tampilkan running services
+    if [ -d /run/systemd/system ] && command -v systemctl &> /dev/null; then
+        # Systemd
+        systemctl list-units --type=service --state=running --no-pager 2>/dev/null
+        
+    elif command -v rc-status &> /dev/null; then
+        # OpenRC (Alpine, Gentoo)
+        echo "OpenRC Services:"
+        rc-status 2>/dev/null | grep -E "started|running" || echo "Tidak dapat membaca status services"
+        
+    elif command -v service &> /dev/null; then
+        # SysV init / service command
+        echo "Running services (via service command):"
+        service --status-all 2>/dev/null | grep -E "\[ \+ \]" || echo "service command tidak mendukung list semua services"
+        
+    elif [ -d /etc/init.d ]; then
+        # Fallback: check init.d scripts
+        echo "Checking /etc/init.d services:"
+        for service in /etc/init.d/*; do
+            [ -x "$service" ] && [ -f "$service" ] && {
+                SERVICE_NAME=$(basename "$service")
+                if "$service" status &>/dev/null; then
+                    echo "  [✓] $SERVICE_NAME"
+                fi
+            }
+        done 2>/dev/null || echo "Tidak dapat membaca /etc/init.d"
+        
+    else
+        echo "Tidak dapat mendeteksi init system"
+        echo "Sistem ini mungkin menggunakan init system yang tidak umum"
+    fi
+
     echo
 
     echo "==================== OPEN PORTS ======================"
@@ -335,10 +394,34 @@ fi
     echo "========================================="
     echo "9. SYSTEMD TIMERS (Active)"
     echo "========================================="
-    if command -v systemctl &> /dev/null; then
-        systemctl list-timers --all
+
+    # Deteksi init system yang digunakan
+    if [ -d /run/systemd/system ]; then
+        # Sistem menggunakan systemd
+        if command -v systemctl &> /dev/null; then
+            echo "Systemd timers detected:"
+            systemctl list-timers --all 2>/dev/null || echo "Tidak dapat membaca systemd timers"
+        else
+            echo "systemctl command tidak tersedia"
+        fi
+    elif [ -f /sbin/init ] && [ -L /sbin/init ]; then
+        # Check apakah init adalah symlink
+        INIT_TARGET=$(readlink -f /sbin/init)
+        if echo "$INIT_TARGET" | grep -q "systemd"; then
+            echo "Systemd terdeteksi tetapi systemctl tidak tersedia"
+        else
+            echo "Systemd tidak tersedia pada sistem ini"
+            echo "Init system: $(basename $INIT_TARGET)"
+        fi
     else
-        echo "systemctl tidak tersedia"
+        # Sistem menggunakan init system klasik
+        echo "Systemd tidak tersedia pada sistem ini"
+        
+        if command -v rc-status &> /dev/null; then
+            echo ""
+            echo "Alternative: OpenRC scheduled services"
+            rc-status --scheduled 2>/dev/null || echo "Tidak ada scheduled services"
+        fi
     fi
     echo
 
