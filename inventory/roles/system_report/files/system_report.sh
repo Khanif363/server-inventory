@@ -18,15 +18,15 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         -ad)
             if [[ -z "$2" || "$2" == -* ]]; then
-                echo "Error: -ad requires a value"
-                echo "Usage: $0 -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
+                echo "Engga gituu: parameter -ad gd.{building-name}_r.{rack}_u.{unit}_ty.{type:svr|vm} harus diisi"
+                echo "Contoh Penggunaan: $0 -ad gd.{building-name}_r.{rack}_u.{unit}_ty.{type:svr|vm}"
                 exit 1
             fi
             ADDITIONAL_INFO="$2"
             shift 2
             ;;
         *)
-            echo "Usage: $0 -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
+            echo "Contoh Penggunaan: $0 -ad gd.{building-name}_r.{rack}_u.{unit}_ty.{type:svr|vm}"
             exit 1
             ;;
     esac
@@ -34,8 +34,8 @@ done
 
 # ✅ Validasi: Pastikan -ad wajib diisi
 if [[ -z "$ADDITIONAL_INFO" ]]; then
-    echo "Error: missing required parameter -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
-    echo "Usage: $0 -ad gd.{building-name}.{rack}_u.{unit}_ty.{type:svr|vm}"
+    echo "Engga gituu: parameter -ad gd.{building-name}_r.{rack}_u.{unit}_ty.{type:svr|vm} harus diisi"
+    echo "Contoh Penggunaan: $0 -ad gd.{building-name}_r.{rack}_u.{unit}_ty.{type:svr|vm}"
     exit 1
 fi
 
